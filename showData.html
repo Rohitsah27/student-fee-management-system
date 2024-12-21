@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Show All Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        #searchBar {
+            width: 98%;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 20px auto;
+            display: block;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            position: fixed;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 1000;
+            visibility: hidden;
+        }
+
+        .spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #4CAF50;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <h2>All Student Billing Data</h2>
+    <input type="text" id="searchBar" placeholder="Search by Student ID, Name, or Class...">
+
+    <table border="1" id="dataTable">
+        <thead>
+            <tr>
+                <th>Sno.</th>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Father Name</th>
+                <th>Class</th>
+                <th>Fee</th>
+                <th>Month</th>
+                <th>Payment Date</th>
+                <th>Due Fee</th>
+                <th>Paid</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <button onclick="window.location.href='index.html'">Back</button>
+    <button id="exportButton">Download Excel</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBgIC-oayBKliG0-fDQAiQhhAGc1Et7NBY",
+            authDomain: "fir-node-d753b.firebaseapp.com",
+            databaseURL: "https://fir-node-d753b-default-rtdb.firebaseio.com",
+            projectId: "fir-node-d753b",
+            storageBucket: "fir-node-d753b.appspot.com",
+            messagingSenderId: "18774161064",
+            appId: "1:18774161064:web:b86e51a0b489ef41a6f49d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase();
+
+        const tableBody = document.querySelector("#dataTable tbody");
+        const loadingElement = document.getElementById("loading");
+        const searchBar = document.getElementById("searchBar");
+
+        function showLoading() {
+            loadingElement.style.visibility = "visible";
+        }
+
+        function hideLoading() {
+            loadingElement.style.visibility = "hidden";
+        }
+
+        function filterTable() {
+            const query = searchBar.value.toLowerCase();
+            const rows = tableBody.getElementsByTagName("tr");
+
+            Array.from(rows).forEach(row => {
+                const cells = row.getElementsByTagName("td");
+                let match = false;
+
+                for (let i = 0; i < 5; i++) { // Check first 5 columns
+                    if (cells[i] && cells[i].innerText.toLowerCase().includes(query)) {
+                        match = true;
+                        break;
+                    }
+                }
+
+                row.style.display = match ? "" : "none";
+            });
+        }
+
+        searchBar.addEventListener("input", filterTable);
+
+        showLoading();
+
+        get(ref(db, 'Student'))
+            .then((snapshot) => {
+                if (snapshot.exists()) {
+                    const students = snapshot.val();
+                    let sno = 1;
+
+                    for (const studentId in students) {
+                        if (students.hasOwnProperty(studentId)) {
+                            const student = students[studentId];
+                            const billing = student.billing || {};
+
+                            let firstPayment = true;
+
+                            if (Object.keys(billing).length === 0) {
+                                const row = tableBody.insertRow();
+                                row.insertCell(0).innerText = sno++;
+                                row.insertCell(1).innerText = studentId;
+                                row.insertCell(2).innerText = student.name || "-";
+                                row.insertCell(3).innerText = student.fatherName || "-";
+                                row.insertCell(4).innerText = student.class || "-";
+                                row.insertCell(5).innerText = "-";
+                                row.insertCell(6).innerText = "-";
+                                row.insertCell(7).innerText = "-";
+                                row.insertCell(8).innerText = "-";
+                                row.insertCell(9).innerText = "-";
+                            } else {
+                                for (const paymentKey in billing) {
+                                    if (billing.hasOwnProperty(paymentKey)) {
+                                        const payment = billing[paymentKey];
+                                        const row = tableBody.insertRow();
+
+                                        if (firstPayment) {
+                                            row.insertCell(0).innerText = sno++;
+                                            row.insertCell(1).innerText = studentId;
+                                            row.insertCell(2).innerText = student.name || "-";
+                                            row.insertCell(3).innerText = student.fatherName || "-";
+                                            row.insertCell(4).innerText = student.class || "-";
+                                            firstPayment = false;
+                                        } else {
+                                            row.insertCell(0);
+                                            row.insertCell(1);
+                                            row.insertCell(2);
+                                            row.insertCell(3);
+                                            row.insertCell(4);
+                                        }
+
+                                        row.insertCell(5).innerText = payment.fee || "-";
+                                        row.insertCell(6).innerText = payment.month || "-";
+                                        row.insertCell(7).innerText = payment.paymentDate || "-";
+                                        row.insertCell(8).innerText = payment.dueFee || "-";
+                                        row.insertCell(9).innerText = payment.paid || "-";
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    alert("No student data found.");
+                }
+            })
+            .catch((error) => {
+                console.error("Error fetching student data:", error);
+            })
+            .finally(() => {
+                hideLoading();
+            });
+
+        document.getElementById('exportButton').addEventListener('click', () => {
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.table_to_sheet(document.getElementById('dataTable'));
+            XLSX.utils.book_append_sheet(wb, ws, 'Student Data');
+            XLSX.writeFile(wb, 'StudentBillingData.xlsx');
+        });
+    </script>
+</body>
+
+</html>

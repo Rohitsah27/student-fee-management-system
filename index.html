@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunrise Public School</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+
+        h1,
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"] {
+            width: 90%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .button-container button {
+            width: 100%;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+
+
+        /* Loading animation styles */
+        #loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            position: fixed;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 1000;
+            visibility: hidden;
+        }
+
+        .spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #4CAF50;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading spinner -->
+    <div id="loading">
+        <div class="spinner"></div>
+    </div>
+    <h1>Sunrise Public School</h1>
+    <h2>Student Fee Management</h2>
+    <div class="container">
+        <div class="form-group">
+            <label for="Name">Name:</label>
+            <input type="text" id="Name">
+            <label for="FatherName">Father Name:</label>
+            <input type="text" id="FatherName">
+            <label for="Class">Class:</label>
+            <input type="text" id="Class">
+            <label for="Fee">Fee:</label>
+            <input type="number" id="Fee">
+            <label for="Month">Month:</label>
+            <input type="text" id="Month" placeholder="e.g., January">
+            <label for="Date">Payment Date:</label>
+            <input type="date" id="Date">
+            <label for="Paid">Paid:</label>
+            <input type="text" id="Paid">
+            <label for="DueFee">Due Fee:</label>
+            <input type="number" id="DueFee" placeholder="If any due">
+            <label for="SearchId">Search by ID:</label>
+            <input type="number" id="SearchId">
+        </div>
+
+        <div class="button-container">
+            <button id="AddBtn">Add</button>
+            <button id="RetBtn">Retrieve</button>
+            <button id="UpdBtn">Update</button>
+            <button id="DelBtn">Delete</button>
+            <button id="ShowAllBtn">Show All Data</button>
+            <button id="Billing">Billing</button>
+        </div>
+    </div>
+
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getDatabase, ref, get, set, update, remove } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBgIC-oayBKliG0-fDQAiQhhAGc1Et7NBY",
+            authDomain: "fir-node-d753b.firebaseapp.com",
+            databaseURL: "https://fir-node-d753b-default-rtdb.firebaseio.com",
+            projectId: "fir-node-d753b",
+            storageBucket: "fir-node-d753b.appspot.com",
+            messagingSenderId: "18774161064",
+            appId: "1:18774161064:web:b86e51a0b489ef41a6f49d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase();
+
+        const loadingElement = document.getElementById("loading");
+
+
+
+        const Name = document.getElementById("Name");
+        const FatherName = document.getElementById("FatherName");
+        const Class = document.getElementById("Class");
+        const Fee = document.getElementById("Fee");
+        const Month = document.getElementById("Month");
+        const Date = document.getElementById("Date");
+        const DueFee = document.getElementById("DueFee");
+        const Paid = document.getElementById("Paid");
+        const SearchId = document.getElementById("SearchId");
+
+        document.getElementById("AddBtn").addEventListener("click", AddData);
+        document.getElementById("RetBtn").addEventListener("click", RetData);
+        document.getElementById("UpdBtn").addEventListener("click", UpdateData);
+        document.getElementById("DelBtn").addEventListener("click", DeleteData);
+        document.getElementById("ShowAllBtn").addEventListener("click", showAllData);
+        document.getElementById("Billing").addEventListener("click", billingFile);
+
+        function showLoading() {
+            loadingElement.style.visibility = "visible";
+        }
+
+        function hideLoading() {
+            loadingElement.style.visibility = "hidden";
+        }
+
+
+
+        async function AddData() {
+            showLoading();
+            try {
+                const studentRef = ref(db, 'Student');
+                const snapshot = await get(studentRef);
+                let newId = 1;
+
+                if (snapshot.exists()) {
+                    const students = snapshot.val();
+                    const keys = Object.keys(students).map(Number);
+                    newId = Math.max(...keys) + 1;
+                }
+
+                // Prepare student data with mandatory fields
+                const studentData = {
+                    name: Name.value.trim(),
+                    fatherName: FatherName.value.trim(),
+                    class: Class.value.trim()
+                };
+
+                // Add billing data only if any billing-related field is provided
+                if (Fee.value || Month.value || Date.value || DueFee.value || Paid.value) {
+                    studentData.billing = {
+                        paymentDate1: {
+                            fee: parseFloat(Fee.value) || 0,
+                            month: Month.value.trim(),
+                            paymentDate: Date.value.trim(),
+                            dueFee: parseFloat(DueFee.value) || 0,
+                            paid: parseFloat(Paid.value) || 0
+                        }
+                    };
+                }
+
+                await set(ref(db, `Student/${newId}`), studentData);
+
+                alert("Data Added Successfully");
+
+                // Reset input fields
+                Name.value = "";
+                FatherName.value = "";
+                Class.value = "";
+                Fee.value = "";
+                Month.value = "";
+                Date.value = "";
+                DueFee.value = "";
+                Paid.value = "";
+
+            } catch (error) {
+                console.error("Error adding data:", error);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function RetData() {
+            showLoading();
+            try {
+                const id = SearchId.value;
+                const snapshot = await get(ref(db, `Student/${id}`));
+                if (snapshot.exists()) {
+                    const student = snapshot.val();
+                    Name.value = student.name;
+                    FatherName.value = student.fatherName;
+                    Class.value = student.class;
+                    const payments = student.billing;
+                    let paymentDetails = '';
+                    for (const paymentKey in payments) {
+                        const payment = payments[paymentKey];
+                        paymentDetails += `${paymentKey}: ${payment.fee} - ${payment.month} - ${payment.paymentDate} - Due Fee: ${payment.dueFee} - Paid: ${payment.paid}\n`;
+                    }
+                    alert("Data Retrieved Successfully");
+                } else {
+                    alert("No data found for ID: " + id);
+                }
+            } catch (error) {
+                console.error("Error retrieving data:", error);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function UpdateData() {
+            showLoading();
+            try {
+                const id = SearchId.value.trim();
+                if (!id) throw new Error("Student ID is required.");
+
+                const studentDetailRef = ref(db, `Student/${id}`);
+                const studentBillingRef = ref(db, `Student/${id}/billing`);
+
+                // Update personal details (name and class)
+                await update(studentDetailRef, {
+                    name: Name.value.trim(),
+                    fatherName: FatherName.value.trim(),
+                    class: Class.value.trim()
+                });
+
+                // Only update billing if all billing fields are provided
+                if (Fee.value || Month.value || Date.value || DueFee.value || Paid.value) {
+                    const snapshot = await get(studentBillingRef);
+
+                    let newPaymentDateId = 1;
+                    if (snapshot.exists()) {
+                        const payments = snapshot.val();
+                        const existingPaymentKeys = Object.keys(payments);
+
+                        if (existingPaymentKeys.length > 0) {
+                            newPaymentDateId = Math.max(
+                                ...existingPaymentKeys.map(key => parseInt(key.replace('paymentDate', ''), 10))
+                            ) + 1;
+                        }
+                    }
+
+                    await update(ref(db, `Student/${id}/billing/paymentDate${newPaymentDateId}`), {
+                        fee: Fee.value ? parseFloat(Fee.value) : 0,
+                        month: Month.value.trim(),
+                        paymentDate: Date.value.trim(),
+                        dueFee: DueFee.value ? parseFloat(DueFee.value) : 0,
+                        paid: Paid.value ? parseFloat(Paid.value) : 0
+                    });
+
+                    alert("Billing data updated successfully.");
+                } else {
+                    console.log("No billing data provided, skipping billing update.");
+                }
+
+                resetInputs(); // Clear input fields
+            } catch (error) {
+                console.error("Error updating data:", error);
+            } finally {
+                hideLoading(); // Always hide the loader
+            }
+        }
+
+
+
+
+        async function DeleteData() {
+            showLoading();
+            try {
+                const id = SearchId.value;
+                // Delete the entire student data with the given id
+                await remove(ref(db, `Student/${id}`));
+                alert("Data Deleted Successfully");
+
+                // Clear the input field
+                SearchId.value = "";
+                Name.value = "";
+                FatherName.value = "";
+                Class.value = "";
+            } catch (error) {
+                console.error("Error deleting data:", error);
+            } finally {
+                hideLoading();
+            }
+        }
+
+
+        function showAllData() {
+            window.location.href = "showData.html";
+        }
+
+        function billingFile() {
+            window.location.href = "billing.html";
+        }
+    </script>
+</body>
+
+
+
+</html>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .form-section,
+        .receipt {
+            width: 400px;
+            margin: auto;
+            border: 1px solid #f00;
+            padding: 20px;
+            margin-bottom: 100px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            text-align: center;
+            color: #f00;
+        }
+        header h4 {
+            margin-top: -10px;
+            text-align: center;
+            color: #f00;
+        }
+
+
+        .details p,
+        .form-section p {
+            font-size: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid #000;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 8px;
+        }
+
+        .totals p {
+            font-weight: bold;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        button {
+            display: block;
+            margin: 10px auto;
+            padding: 10px 20px;
+            background: #f00;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .charge-item {
+            margin-bottom: 5px;
+        }
+
+        .charge-item input[type="number"] {
+            margin-left: 10px;
+            width: 100px;
+        }
+
+        /* Print-specific styles */
+        @media print {
+            body {
+                margin: 0;
+                font-size: 12px;
+            }
+
+            .form-section {
+                display: none;
+            }
+
+            .receipt {
+                margin: 0;
+               
+            }
+
+            table th,
+            table td {
+                font-size: 10px;
+                padding: 5px;
+            }
+
+            .totals p {
+                font-size: 12px;
+            }
+
+            footer {
+                font-size: 10px;
+            }
+
+            button {
+                display: none;
+            }
+        }
+
+        @media (min-width: 600px) {
+            .receipt {
+                margin-top: 40px;
+                width: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="form-section">
+        <header>
+            <h1>Sunrise Public School</h1>
+            <h4>Jagdishpur (Saran)</h4>
+        </header>
+        <form id="billing-form">
+            <p><label for="input-name">Name:</label> <input type="text" id="input-name" required></p>
+            <p><label for="input-fatherName">Father's Name:</label> <input type="text" id="input-fatherName" required>
+            </p>
+            <p><label for="input-class">Class:</label> <input type="text" id="input-class" required></p>
+            <p><label for="input-roll">Roll No:</label> <input type="text" id="input-roll" required></p>
+            <p><label for="input-month">Month:</label> <input type="text" id="input-month" required></p>
+            <p><label for="input-date">Date of Payment:</label> <input type="date" id="input-date" required></p>
+
+            <h3>Select Charges</h3>
+            <div class="charge-item">
+                <input type="checkbox" id="monthly-fee" onclick="toggleInput('monthly-fee-amount')">
+                <label for="monthly-fee">Monthly Fee</label>
+                <input type="number" id="monthly-fee-amount" class="hidden" placeholder="Enter amount">
+            </div>
+            <div class="charge-item">
+                <input type="checkbox" id="transport-charge" onclick="toggleInput('transport-charge-amount')">
+                <label for="transport-charge">Transport Charge</label>
+                <input type="number" id="transport-charge-amount" class="hidden" placeholder="Enter amount">
+            </div>
+            <div class="charge-item">
+                <input type="checkbox" id="examination-fee" onclick="toggleInput('examination-fee-amount')">
+                <label for="examination-fee">Examination Fee</label>
+                <input type="number" id="examination-fee-amount" class="hidden" placeholder="Enter amount">
+            </div>
+            <div class="charge-item">
+                <input type="checkbox" id="school-dress" onclick="toggleInput('school-dress-amount')">
+                <label for="school-dress">School Dress Set</label>
+                <input type="number" id="school-dress-amount" class="hidden" placeholder="Enter amount">
+            </div>
+            <div class="charge-item">
+                <input type="checkbox" id="previous-dues" onclick="toggleInput('previous-dues-amount')">
+                <label for="previous-dues">Previous Dues</label>
+                <input type="number" id="previous-dues-amount" class="hidden" placeholder="Enter amount">
+            </div>
+            <div class="charge-item">
+                <input type="checkbox" id="independence-fee" onclick="toggleInput('independence-fee-amount')">
+                <label for="independence-fee">15 Aug/26 Jan Fee</label>
+                <input type="number" id="independence-fee-amount" class="hidden" placeholder="Enter amount">
+            </div>
+            <div class="charge-item">
+                <input type="checkbox" id="electricity-charge" onclick="toggleInput('electricity-charge-amount')">
+                <label for="electricity-charge">Electricity Charge</label>
+                <input type="number" id="electricity-charge-amount" class="hidden" placeholder="Enter amount">
+            </div>
+
+            <p><label for="input-paid">Paid Amount:</label> <input type="number" id="input-paid" required></p>
+            <button type="button" onclick="generateReceipt()">Generate Receipt</button>
+        </form>
+    </div>
+
+    <div class="receipt hidden" id="receipt-section" style="width: 400px;">
+        <header>
+            <h1>Sunrise Public School</h1>
+            <h4>Jagdishpur (Saran)</h4>
+            <p>Mob.: 8794091143</p>
+        </header>
+        <section class="details">
+            <p>Name: <span id="name"></span></p>
+            <p>Father's Name: <span id="fatherName"></span></p>
+            <p>Class: <span id="class"></span></p>
+            <p>Roll: <span id="roll"></span></p>
+            <p>Month: <span id="month"></span></p>
+            <p>Date of Payment: <span id="date"></span></p>
+        </section>
+        <table>
+            <thead>
+                <tr>
+                    <th>Particulars</th>
+                    <th>Amount (Rs.)</th>
+                </tr>
+            </thead>
+            <tbody id="bill-details">
+                <!-- Dynamic Rows -->
+            </tbody>
+        </table>
+        <div class="totals">
+            <p>Total: <span id="total"></span></p>
+            <p>Paid: <span id="paid"></span></p>
+            <p>Dues: <span id="dues"></span></p>
+        </div>
+        <footer>
+            <p>Principal: Arvind Kr. Yadav</p>
+            <p>Director: Vinod Kr. Gupta</p>
+        </footer>
+        <button onclick="printReceipt()">Print</button>
+    </div>
+
+    <script>
+        function toggleInput(id) {
+            const input = document.getElementById(id);
+            input.classList.toggle('hidden');
+            input.value = ''; // Optional, clear input if unchecked
+            adjustReceiptWidth();
+        }
+
+        function generateReceipt() {
+            const name = document.getElementById('input-name').value;
+            const fatherName = document.getElementById('input-fatherName').value;
+            const studentClass = document.getElementById('input-class').value;
+            const roll = document.getElementById('input-roll').value;
+            const month = document.getElementById('input-month').value;
+            const date = document.getElementById('input-date').value;
+            const paid = parseFloat(document.getElementById('input-paid').value);
+
+            document.getElementById('name').innerText = name;
+            document.getElementById('fatherName').innerText = fatherName;
+            document.getElementById('class').innerText = studentClass;
+            document.getElementById('roll').innerText = roll;
+            document.getElementById('month').innerText = month;
+            document.getElementById('date').innerText = date;
+
+            const charges = [
+                { id: 'monthly-fee', label: 'Monthly Fee', amountId: 'monthly-fee-amount' },
+                { id: 'transport-charge', label: 'Transport Charge', amountId: 'transport-charge-amount' },
+                { id: 'examination-fee', label: 'Examination Fee', amountId: 'examination-fee-amount' },
+                { id: 'school-dress', label: 'School Dress', amountId: 'school-dress-amount' },
+                { id: 'previous-dues', label: 'Previous Dues', amountId: 'previous-dues-amount' },
+                { id: 'independence-fee', label: 'Independence Day Fee', amountId: 'independence-fee-amount' },
+                { id: 'electricity-charge', label: 'Electricity Charge', amountId: 'electricity-charge-amount' }
+            ];
+
+            let total = 0;
+            const billDetails = document.getElementById('bill-details');
+            billDetails.innerHTML = ''; // Clear previous details
+
+            charges.forEach(charge => {
+                const isChecked = document.getElementById(charge.id).checked;
+                if (isChecked) {
+                    const amount = parseFloat(document.getElementById(charge.amountId).value) || 0;
+                    total += amount;
+                    billDetails.innerHTML += `<tr><td>${charge.label}</td><td>${amount.toFixed(2)}</td></tr>`;
+                }
+            });
+
+            const dues = total - paid;
+
+            document.getElementById('total').innerText = total.toFixed(2);
+            document.getElementById('paid').innerText = paid.toFixed(2);
+            document.getElementById('dues').innerText = dues.toFixed(2);
+
+            document.getElementById('receipt-section').classList.remove('hidden');
+        }
+
+        function printReceipt() {
+            window.print();
+        }
+
+        function adjustReceiptWidth() {
+            const selectedCharges = document.querySelectorAll('.charge-item input[type="checkbox"]:checked').length;
+            const receipt = document.getElementById('receipt-section');
+            let newWidth = Math.min(30 + selectedCharges * 2, 50);
+            receipt.style.width = `${newWidth}%`;
+        }
+
+        function printReceipt() {
+            adjustReceiptWidth(); // Adjust width before printing
+            setTimeout(() => {
+                window.print();
+            }, 100); // Add a slight delay to allow width adjustment
+        }
+
+    </script>
+</body>
+
+</html>
